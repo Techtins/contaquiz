@@ -10,60 +10,60 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Badge } from "../../../components/ui/atoms/badge"
 import { Trash2, Edit, Plus, Search } from "lucide-react"
 import { useToast } from "../../../hooks/useToast"
-import { Discipline, DisciplineFormData } from "../../../lib/interface/IDisciplina"
 import { Hint } from '../../../components/ui/atoms/tooltip';
-import { useDisciplines } from '@/hooks/api/useDisciplines';
-import { DisciplineDialog } from './_ui/disciplineDialog';
-import { DisciplineAlertDialog } from './_ui/disciplineAlertDialog';
+import { useQuestions } from '@/hooks/api/useQuestions';
 import { setDialog } from '@/lib/utils';
+import { Question, QuestionFormData } from '@/lib/interface/IQuestao';
+import { QuestionDialog } from './_ui/questionDialog';
+import { QuestionAlertDialog } from './_ui/questionAlertDialog';
 
-export default function DisciplinasPage() {
+export default function QuestõesPage() {
     const [searchQuery, setSearchQuery] = useState("")
 
-    const [dialogState, setDialogState] = useState<{ isOpenCreateOrEditDialog: boolean; isOpenDeleteDialog: boolean; data?: Discipline | null }>({
+    const [dialogState, setDialogState] = useState<{ isOpenCreateOrEditDialog: boolean; isOpenDeleteDialog: boolean; data?: Question | null }>({
         isOpenCreateOrEditDialog: false,
         isOpenDeleteDialog: false,
         data: null,
     });
 
     const { toast } = useToast()
-    const { useListDisciplines, useCreateDiscipline, useUpdateDiscipline, useDeleteDiscipline } = useDisciplines();
+    const { useListQuestions, useCreateQuestion, useUpdateQuestion, useDeleteQuestion } = useQuestions();
 
-    const { data: dataDisciplines, isError, isLoading } = useListDisciplines({ page: 1, limit: 10, filter: searchQuery });
-    const { mutate: createDiscipline } = useCreateDiscipline();
-    const { mutate: updateDiscipline } = useUpdateDiscipline();
-    const { mutate: deleteDiscipline } = useDeleteDiscipline();
+    const { data: dataQuestions, isError, isLoading } = useListQuestions({ page: 1, limit: 10, filter: searchQuery });
+    const { mutate: createQuestion } = useCreateQuestion();
+    const { mutate: updateQuestion } = useUpdateQuestion();
+    const { mutate: deleteQuestion } = useDeleteQuestion();
 
-    const handleSaveDiscipline = (data: DisciplineFormData) => {
+    const handleSaveQuestion = (data: QuestionFormData) => {
         if (dialogState.data?._id) {
-            updateDiscipline({ id: dialogState.data._id, payload: data });
-            toast({ title: "Disciplina atualizada!", description: `A disciplina "${data.name}" foi atualizada.` });
+            updateQuestion({ id: dialogState.data._id, payload: data });
+            toast({ title: "Questão atualizada!", description: `A questão "${data.statement?.slice(0, 20)}..." foi atualizada.` });
         }
         else {
-            createDiscipline(data);
-            toast({ title: "Disciplina criada!", description: `A disciplina "${data.name}" foi criada.` });
+            createQuestion(data);
+            toast({ title: "Questão criada!", description: `A questão "${data.statement?.slice(0, 20)}..." foi criada.` });
         }
         closeDialog();
     };
 
-    const handleDeleteDiscipline = () => {
+    const handleDeleteQuestion = () => {
         if (!dialogState.data?._id) return;
-        deleteDiscipline(dialogState.data._id);
-        toast({ title: "Disciplina excluída!", description: `A disciplina foi removida.` });
+        deleteQuestion(dialogState.data._id);
+        toast({ title: "Questão excluída!", description: `A questão foi removida.` });
         closeDialog();
     }
 
     const openCreateDialog = () => setDialogState(setDialog("createOrEdit", null));
-    const openEditDialog = (discipline: Discipline) => setDialogState(setDialog("createOrEdit", discipline));
-    const openDeleteDialog = (discipline: Discipline) => setDialogState(setDialog("delete", discipline));
+    const openEditDialog = (discipline: Question) => setDialogState(setDialog("createOrEdit", discipline));
+    const openDeleteDialog = (discipline: Question) => setDialogState(setDialog("delete", discipline));
     const closeDialog = () => setDialogState(setDialog("none", null));
 
     return (
         <div className="container mx-auto py-8 px-4">
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-2xl font-bold">Gerenciar Disciplinas</CardTitle>
-                    <CardDescription>Crie, edite e gerencie as disciplinas do sistema</CardDescription>
+                    <CardTitle className="text-2xl font-bold">Gerenciar Questões</CardTitle>
+                    <CardDescription>Crie, edite e gerencie as questões do sistema</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {/* Search and Create */}
@@ -71,7 +71,7 @@ export default function DisciplinasPage() {
                         <div className="flex-1 relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                             <Input
-                                placeholder="Buscar disciplinas..."
+                                placeholder="Buscar questões..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-10"
@@ -79,7 +79,7 @@ export default function DisciplinasPage() {
                         </div>
                         <Button className={'cursor-pointer'} onClick={openCreateDialog}>
                             <Plus className="h-4 w-4 mr-2" />
-                            Nova Disciplina
+                            Nova Questão
                         </Button>
                     </div>
 
@@ -88,8 +88,8 @@ export default function DisciplinasPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Nome</TableHead>
-                                    <TableHead>Descrição</TableHead>
+                                    <TableHead>Enunciado</TableHead>
+                                    <TableHead>Dificuldade</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Criada em</TableHead>
                                     <TableHead className="text-right">Ações</TableHead>
@@ -99,20 +99,20 @@ export default function DisciplinasPage() {
                                 {isLoading ? (
                                     <TableRow>
                                         <TableCell colSpan={5} className="text-center py-8">
-                                            Carregando disciplinas...
+                                            Carregando questões...
                                         </TableCell>
                                     </TableRow>
-                                ) : dataDisciplines?.total === 0 || !dataDisciplines?.items.length || isError ? (
+                                ) : dataQuestions?.total === 0 || !dataQuestions?.items.length || isError ? (
                                     <TableRow>
                                         <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                                            {searchQuery ? "Nenhuma disciplina encontrada" : "Nenhuma disciplina cadastrada"}
+                                            {searchQuery ? "Nenhuma questão encontrada" : "Nenhuma questão cadastrada"}
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    dataDisciplines?.items?.map((discipline) => (
+                                    dataQuestions?.items?.map((discipline) => (
                                         <TableRow key={discipline._id}>
-                                            <TableCell className="font-medium">{discipline.name}</TableCell>
-                                            <TableCell className="max-w-xs truncate">{discipline.description || "-"}</TableCell>
+                                            <TableCell className="font-medium">{discipline.statement?.split(" ")?.slice(0, 8).join(" ")}</TableCell>
+                                            <TableCell className="max-w-xs truncate">{discipline.difficulty || "-"}</TableCell>
                                             <TableCell>
                                                 <Badge variant={discipline.active ? "default" : "secondary"}>
                                                     {discipline.active ? "Ativa" : "Inativa"}
@@ -143,19 +143,19 @@ export default function DisciplinasPage() {
                 </CardContent>
             </Card>
             {/* Create/Edit Dialog */}
-            <DisciplineDialog
+            <QuestionDialog
                 isOpen={dialogState.isOpenCreateOrEditDialog}
                 onOpenChange={closeDialog}
-                onSubmit={handleSaveDiscipline}
+                onSubmit={handleSaveQuestion}
                 initialData={dialogState.data}
             />
 
             {/* Delete Confirmation Dialog */}
-            <DisciplineAlertDialog
+            <QuestionAlertDialog
                 data={dialogState.data || null}
                 isOpen={dialogState.isOpenDeleteDialog}
                 onOpenChange={closeDialog}
-                onConfirm={handleDeleteDiscipline}
+                onConfirm={handleDeleteQuestion}
             />
         </div>
     )

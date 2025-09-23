@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { DialogType } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
@@ -34,3 +35,11 @@ export function getMonthName(dateString: string): string {
     const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
     return monthNames[date.getMonth()];
 }
+
+export const setDialog = <T>(type: DialogType, data: T | null = null) => {
+  return {
+    isOpenCreateOrEditDialog: type === "createOrEdit",
+    isOpenDeleteDialog: type === "delete",
+    data,
+  };
+};

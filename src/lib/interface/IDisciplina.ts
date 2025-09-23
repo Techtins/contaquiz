@@ -7,7 +7,7 @@ export interface Discipline {
     updatedAt: string
 }
 
-export interface DisciplineFormData {
+export type DisciplineFormData = {
     name: string
     description: string
     active: boolean

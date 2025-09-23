@@ -163,8 +163,8 @@ export default function HomePage() {
                     </div>
                     <div>
                       <p className="text-muted-foreground mb-4">
-                        "O ContaQuiz foi fundamental para minha aprovação. Os simulados por área me ajudaram a identificar
-                        exatamente onde precisava melhorar."
+                        O ContaQuiz foi fundamental para minha aprovação. Os simulados por área me ajudaram a identificar
+                        exatamente onde precisava melhorar.
                       </p>
                       <div>
                         <p className="font-semibold">Maria Silva</p>
@@ -183,8 +183,8 @@ export default function HomePage() {
                     </div>
                     <div>
                       <p className="text-muted-foreground mb-4">
-                        "Os relatórios detalhados me mostraram minha evolução. Consegui focar nos pontos fracos e passar
-                        de primeira!"
+                        Os relatórios detalhados me mostraram minha evolução. Consegui focar nos pontos fracos e passar
+                        de primeira!
                       </p>
                       <div>
                         <p className="font-semibold">João Santos</p>
