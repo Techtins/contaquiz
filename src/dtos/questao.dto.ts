@@ -11,7 +11,7 @@ export const createQuestionSchema = z.object({
     body: z.object({
         statement: z.string().min(5, "O enunciado é obrigatório e deve ter no mínimo 5 caracteres"),
         type: z.enum(QuestionType).default(QuestionType.MULTIPLA_ESCOLHA),
-        disciplineId: z.string().optional(),
+        disciplineId: z.string().min(1).optional().nullable(),
         topicIds: z.array(z.string().min(1)).optional(),
         difficulty: z.enum(DifficultyLevel).default(DifficultyLevel.MEDIO),
         options: z.array(questionOptionSchema).min(2, "A questão deve ter no mínimo 2 opções"),

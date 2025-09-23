@@ -59,7 +59,6 @@ export async function createQuestion(data: CreateQuestionDTO) {
     // Evita duplicidade amigavelmente (além do índice único)
     const exists = await QuestionModel.findOne({ statement: data.statement });
     if (exists) throw httpError(409, 'Já existe uma questão com esse enunciado');
-
     // Verifica se a disciplina existe
     if (data.disciplineId) {
         const disciplineExists = await DisciplineModel.findById(data.disciplineId);
