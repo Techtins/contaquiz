@@ -1,10 +1,45 @@
-import DisciplineModel, { CreateDisciplineDTO, UpdateDisciplineDTO } from '../models/Disciplina';
+import DisciplineModel from '../models/Disciplina';
+import { CreateDisciplineDTO, UpdateDisciplineDTO } from '../dtos/disciplina.dto';
 import { FilterQuery } from 'mongoose';
+import { httpError } from '../middlewares/error';
+import { ListOptions } from '../dtos/default.dto';
 
-function httpError(status: number, message: string) {
-    const e: any = new Error(message);
-    e.status = status;
-    return e;
+export async function getDisciplineById(id: string) {
+    const doc = await DisciplineModel.findById(id);
+    if (!doc) throw httpError(404, 'Disciplina não encontrada');
+    return doc;
+}
+
+export async function listDisciplines(opts: ListOptions) {
+    const page = Math.max(1, opts.page || 1);
+    const limit = Math.min(100, Math.max(1, opts.limit || 10));
+    const skip = (page - 1) * limit;
+
+    const filter: FilterQuery<any> = {};
+    
+    if (opts.active !== undefined) {
+        filter.active = opts.active?.toString() === 'true';
+    }
+
+    if (opts.filter) {
+        filter.$or = [
+            { name: { $regex: opts.filter, $options: 'i' } },
+            { description: { $regex: opts.filter, $options: 'i' } },
+        ];
+    }
+
+    const [items, total] = await Promise.all([
+        DisciplineModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+        DisciplineModel.countDocuments(filter),
+    ]);
+
+    return {
+        items,
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+    };
 }
 
 export async function createDiscipline(data: CreateDisciplineDTO) {
@@ -21,45 +56,6 @@ export async function createDiscipline(data: CreateDisciplineDTO) {
         }
         throw e;
     }
-}
-
-export async function getDisciplineById(id: string) {
-    const doc = await DisciplineModel.findById(id);
-    if (!doc) throw httpError(404, 'Disciplina não encontrada');
-    return doc;
-}
-
-export async function listDisciplines(opts: {
-    page?: number;
-    limit?: number;
-    q?: string;
-    active?: boolean;
-}) {
-    const page = Math.max(1, opts.page || 1);
-    const limit = Math.min(100, Math.max(1, opts.limit || 10));
-    const skip = (page - 1) * limit;
-
-    const filter: FilterQuery<any> = {};
-    if (typeof opts.active === 'boolean') filter.active = opts.active;
-    if (opts.q) {
-        filter.$or = [
-            { name: { $regex: opts.q, $options: 'i' } },
-            { description: { $regex: opts.q, $options: 'i' } },
-        ];
-    }
-
-    const [items, total] = await Promise.all([
-        DisciplineModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
-        DisciplineModel.countDocuments(filter),
-    ]);
-
-    return {
-        items,
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-    };
 }
 
 export async function updateDiscipline(id: string, data: UpdateDisciplineDTO) {

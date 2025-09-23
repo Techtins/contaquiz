@@ -28,7 +28,7 @@ export interface IQuestion {
     options: IQuestionOption[];        // alternativas (inclusive para certo/errado)
     explanation?: string;              // justificativa da correta
     // attachments?: IQuestionAttachment[];
-    isActive: boolean;
+    active: boolean;
 
     // Estatísticas básicas de uso
     stats: {
@@ -61,13 +61,13 @@ const QuestionSchema = new Schema<IQuestion>(
     {
         statement: { type: String, required: true },
         type: { type: String, enum: Object.values(QuestionType), required: true },
-        disciplineId: { type: Schema.Types.ObjectId, ref: "Discipline", required: true },
-        topicIds: [{ type: Schema.Types.ObjectId, ref: "Topic", required: true }],
-        difficulty: { type: String, enum: Object.values(DifficultyLevel), required: true },
+        disciplineId: { type: Schema.Types.ObjectId, ref: "Discipline" },
+        topicIds: [{ type: Schema.Types.ObjectId, ref: "Topic" }],
+        difficulty: { type: String, enum: Object.values(DifficultyLevel), default: DifficultyLevel.MEDIO, required: true },
         options: { type: [QuestionOptionSchema], validate: (arr: any[]) => Array.isArray(arr) && arr.length >= 2 },
         explanation: { type: String },
         // attachments: [QuestionAttachmentSchema],
-        isActive: { type: Boolean, default: true },
+        active: { type: Boolean, default: true },
         stats: {
             timesAnswered: { type: Number, default: 0 },
             timesCorrect: { type: Number, default: 0 },
@@ -77,7 +77,7 @@ const QuestionSchema = new Schema<IQuestion>(
 );
 
 // buscas rápidas por filtros do gerador de quiz
-QuestionSchema.index({ disciplineId: 1, difficulty: 1, isActive: 1 });
+QuestionSchema.index({ disciplineId: 1, difficulty: 1, active: 1 });
 QuestionSchema.index({ topicIds: 1 });
 QuestionSchema.index({ "stats.timesAnswered": -1 });
 
