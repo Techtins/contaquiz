@@ -3,32 +3,31 @@
 /* ======= PALETA PASTEL (LIGHT) ======= */
 :root {
   /* Base */
-  --background: #ffffff;
-  --foreground: #0f172a;         /* slate-900 */
-  --muted: #f8fafc;              /* slate-50 */
-  --muted-foreground: #64748b;   /* slate-500 */
-  --border: #e5e7eb;             /* slate-200 */
-  --input: #f1f5f9;              /* slate-100 */
-  --card: #ffffff;
+  --background: #f6f8fc;
+  --foreground: #10213a;
+  --muted: #eef3f8;
+  --muted-foreground: #5f6f86;
+  --border: #d9e2ef;
+  --input: #edf2f7;
+  --card: rgba(255, 255, 255, 0.88);
   --card-foreground: var(--foreground);
   --popover: #ffffff;
   --popover-foreground: var(--foreground);
-  --ring: #9ec5fe;               /* azul pastel (para focus ring) */
+  --ring: #2563eb;
 
-  /* Pastéis */
-  --primary: #9ec5fe;            /* azul pastel */
-  --primary-foreground: #0f172a;
+  --primary: #0f5bd7;
+  --primary-foreground: #f8fbff;
 
-  --secondary: #b7e4c7;          /* verde pastel (uso como “success”) */
-  --secondary-foreground: #0f172a;
+  --secondary: #d7efe4;
+  --secondary-foreground: #143222;
 
-  --warning: #ffd6a5;            /* laranja pastel */
+  --warning: #ffd9b4;
   --warning-foreground: #7c2d12;
 
-  --destructive: #f8b4b4;        /* vermelho pastel */
+  --destructive: #f3b1b1;
   --destructive-foreground: #7f1d1d;
 
-  --accent: #e2e8f0;             /* cinza claro p/ hovers, headers etc. */
+  --accent: #e4ebf5;
 }
 
 /* Mapeia os tokens p/ as utilities do Tailwind (v4) */
@@ -76,5 +75,22 @@
 /* Base */
 html, body {
   background: var(--background);
+  color: var(--foreground);
+}
+
+body {
+  min-height: 100vh;
+  background-image:
+    radial-gradient(circle at top left, rgba(15, 91, 215, 0.12), transparent 28%),
+    radial-gradient(circle at top right, rgba(22, 163, 74, 0.08), transparent 24%),
+    linear-gradient(180deg, #f8fbff 0%, #f4f7fb 42%, #edf3f9 100%);
+}
+
+* {
+  border-color: var(--border);
+}
+
+::selection {
+  background: rgba(15, 91, 215, 0.18);
   color: var(--foreground);
 }

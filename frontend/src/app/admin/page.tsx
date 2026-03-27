@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/atoms/card"
 import { Button } from "@/components/ui/atoms/button"
-import { BookOpen, Users, FileQuestion, Trophy, BarChart3, Settings, TrendingUp, Clock } from "lucide-react"
+import { BookOpen, Users, FileQuestion, Trophy, Settings, Gamepad2 } from "lucide-react"
 import Link from "next/link"
 
 export default function AdminDashboard() {
@@ -119,6 +119,21 @@ export default function AdminDashboard() {
                         <CardContent>
                             <Button asChild className="w-full">
                                 <Link href="/admin/questoes">Gerenciar</Link>
+                            </Button>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-2 hover:border-primary/50 transition-colors cursor-pointer">
+                        <CardHeader className="text-center">
+                            <div className="mx-auto mb-4 p-3 bg-primary/10 rounded-full w-fit">
+                                <Gamepad2 className="h-8 w-8 text-primary" />
+                            </div>
+                            <CardTitle className="text-xl">Quizzes</CardTitle>
+                            <CardDescription>Crie e gerencie quizzes</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Button asChild className="w-full">
+                                <Link href="/admin/quizzes">Gerenciar</Link>
                             </Button>
                         </CardContent>
                     </Card>

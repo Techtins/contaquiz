@@ -1,20 +1,32 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/atoms/button"
-import { BookOpen, Users, FileQuestion, Trophy, BarChart3, Settings, Menu, X, Home, LogOut } from "lucide-react"
+import { BookOpen, Users, FileQuestion, Trophy, Settings, Menu, X, Home, LogOut } from "lucide-react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { useToast } from "@/hooks/useToast"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/atoms/alertDialog"
+import { clearAuthSession, getAuthSession } from "@/lib/auth"
 
 const navigation = [
     { name: "Dashboard", href: "/admin", icon: Home },
     { name: "Disciplinas", href: "/admin/disciplinas", icon: BookOpen },
-    { name: "Tópicos", href: "/admin/topicos", icon: Settings },
-    { name: "Questões", href: "/admin/questoes", icon: FileQuestion },
+    { name: "Topicos", href: "/admin/topicos", icon: Settings },
+    { name: "Questoes", href: "/admin/questoes", icon: FileQuestion },
     { name: "Quizzes", href: "/admin/quizzes", icon: Trophy },
-    { name: "Usuários", href: "/admin/usuarios", icon: Users },
+    { name: "Usuarios", href: "/admin/usuarios", icon: Users },
 ]
 
 export default function AdminLayout({
@@ -23,7 +35,47 @@ export default function AdminLayout({
     children: React.ReactNode
 }) {
     const [sidebarOpen, setSidebarOpen] = useState(false)
+    const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false)
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+    const [userName, setUserName] = useState("")
+    const [userEmail, setUserEmail] = useState("")
     const pathname = usePathname()
+    const router = useRouter()
+    const { toast } = useToast()
+
+    useEffect(() => {
+        const session = getAuthSession()
+
+        if (!session) {
+            router.replace("/auth/login")
+            return
+        }
+
+        setUserName(session.name)
+        setUserEmail(session.email)
+        setIsCheckingAuth(false)
+    }, [router])
+
+    const handleLogout = () => {
+        clearAuthSession()
+        setIsLogoutDialogOpen(false)
+        toast({
+            title: "Voce saiu do sistema com sucesso.",
+            description: "Redirecionando para a tela de login.",
+        })
+        router.replace("/auth/login")
+    }
+
+    if (isCheckingAuth) {
+        return (
+            <div className="flex min-h-screen items-center justify-center px-4">
+                <div className="rounded-3xl border border-white/70 bg-white/85 px-6 py-8 text-center shadow-xl shadow-slate-200/50">
+                    <p className="text-sm font-medium text-foreground">Verificando sessao...</p>
+                    <p className="mt-2 text-sm text-muted-foreground">Protegendo o acesso as telas internas.</p>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="min-h-screen bg-background">
@@ -76,18 +128,16 @@ export default function AdminLayout({
                     <div className="p-4 border-t border-border">
                         <div className="flex items-center gap-3 mb-3">
                             <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                                <span className="text-sm font-medium text-primary-foreground">A</span>
+                                <span className="text-sm font-medium text-primary-foreground">{userName.charAt(0).toUpperCase()}</span>
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-foreground truncate">Admin</p>
-                                <p className="text-xs text-muted-foreground truncate">admin@contaquiz.com</p>
+                                <p className="text-sm font-medium text-foreground truncate">{userName}</p>
+                                <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
                             </div>
                         </div>
-                        <Button variant="outline" size="sm" className="w-full bg-transparent" asChild>
-                            <Link href="/login">
-                                <LogOut className="h-4 w-4 mr-2" />
-                                Sair
-                            </Link>
+                        <Button variant="outline" size="sm" className="w-full bg-transparent" onClick={() => setIsLogoutDialogOpen(true)}>
+                            <LogOut className="h-4 w-4 mr-2" />
+                            Sair
                         </Button>
                     </div>
                 </div>
@@ -104,6 +154,10 @@ export default function AdminLayout({
 
                         <div className="flex items-center gap-4 ml-auto">
                             <span className="text-sm text-muted-foreground hidden sm:block">Painel Administrativo</span>
+                            <Button variant="outline" size="sm" className="hidden bg-transparent sm:inline-flex" onClick={() => setIsLogoutDialogOpen(true)}>
+                                <LogOut className="mr-2 h-4 w-4" />
+                                Sair
+                            </Button>
                         </div>
                     </div>
                 </header>
@@ -111,6 +165,21 @@ export default function AdminLayout({
                 {/* Page content */}
                 <main className="p-4 lg:p-6">{children}</main>
             </div>
+
+            <AlertDialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Tem certeza que deseja sair do sistema?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Ao confirmar, a sessao atual sera encerrada e os dados locais de autenticacao serao removidos.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Nao</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleLogout}>Sim</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

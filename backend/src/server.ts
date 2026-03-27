@@ -1,4 +1,8 @@
 import 'dotenv/config';
+import { initSentry } from './config/sentry';
+initSentry();
+
+import * as Sentry from '@sentry/node';
 import express from 'express';
 import cors from 'cors';
 import routes from './routes/index';
@@ -14,6 +18,8 @@ async function bootstrap() {
     app.use(express.json());
 
     app.use('/api', routes);
+
+    Sentry.setupExpressErrorHandler(app);
 
     app.use(notFound);
     app.use(errorHandler);

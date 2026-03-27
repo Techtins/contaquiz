@@ -16,4 +16,8 @@ router.get('/readyz', async (_req: Request, res: Response): Promise<void> => {
     res.status(data.ready ? 200 : 503).json(data);
 });
 
+router.get('/debug-sentry', () => {
+    throw new Error('Teste Sentry - erro intencional do ContaQuiz');
+});
+
 export default router;

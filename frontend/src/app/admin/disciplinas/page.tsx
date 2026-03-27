@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
-import 'dotenv/config';
 import { useState } from "react"
 import { Button } from "../../../components/ui/atoms/button"
 import { Input } from "../../../components/ui/atoms/input"
