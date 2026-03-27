@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+/* ======= PALETA PASTEL (LIGHT) ======= */
+:root {
+  /* Base */
+  --background: #f6f8fc;
+  --foreground: #10213a;
+  --muted: #eef3f8;
+  --muted-foreground: #5f6f86;
+  --border: #d9e2ef;
+  --input: #edf2f7;
+  --card: rgba(255, 255, 255, 0.88);
+  --card-foreground: var(--foreground);
+  --popover: #ffffff;
+  --popover-foreground: var(--foreground);
+  --ring: #2563eb;
+
+  --primary: #0f5bd7;
+  --primary-foreground: #f8fbff;
+
+  --secondary: #d7efe4;
+  --secondary-foreground: #143222;
+
+  --warning: #ffd9b4;
+  --warning-foreground: #7c2d12;
+
+  --destructive: #f3b1b1;
+  --destructive-foreground: #7f1d1d;
+
+  --accent: #e4ebf5;
+}
+
+/* Mapeia os tokens p/ as utilities do Tailwind (v4) */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-ring: var(--ring);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-accent: var(--accent);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* Não alterna pra dark automaticamente */
+@media (prefers-color-scheme: dark) {
+  :root { /* vazio intencionalmente */ }
+}
+
+/* Base */
+html, body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+body {
+  min-height: 100vh;
+  background-image:
+    radial-gradient(circle at top left, rgba(15, 91, 215, 0.12), transparent 28%),
+    radial-gradient(circle at top right, rgba(22, 163, 74, 0.08), transparent 24%),
+    linear-gradient(180deg, #f8fbff 0%, #f4f7fb 42%, #edf3f9 100%);
+}
+
+* {
+  border-color: var(--border);
+}
+
+::selection {
+  background: rgba(15, 91, 215, 0.18);
+  color: var(--foreground);
+}

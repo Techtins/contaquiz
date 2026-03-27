@@ -1,0 +1,182 @@
+'use client';
+
+import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { getQuizResult } from '@/services/modules/quiz.service';
+import { Button } from '@/components/ui/atoms/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/atoms/card';
+import { Loader2, AlertCircle, CheckCircle2, XCircle, ArrowLeft } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+interface ResultPageProps {
+  params: {
+    id: string;
+    resultId: string;
+  };
+}
+
+export default function ResultPage({ params }: ResultPageProps) {
+  const router = useRouter();
+
+  const { data: result, isLoading, error } = useQuery({
+    queryKey: ['quizResult', params.resultId],
+    queryFn: () => getQuizResult(params.resultId),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-500 mb-4" />
+          <p className="text-gray-600">Carregando resultado...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !result) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="flex gap-4">
+              <AlertCircle className="h-6 w-6 text-red-500 flex-shrink-0" />
+              <div>
+                <h2 className="font-semibold text-red-700">Erro</h2>
+                <p className="text-sm text-gray-600 mt-1">Não conseguimos carregar o resultado.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const percentage = result.percentage;
+  const isPassed = percentage >= result.passingScore;
+
+  const getColor = () => {
+    if (percentage >= 90) return { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700' };
+    if (percentage >= 70) return { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' };
+    return { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700' };
+  };
+
+  const color = getColor();
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-3">
+          <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded">
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-2xl font-bold">Resultado</h1>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        {/* Score */}
+        <Card className={cn('mb-8 border-2', color.bg, color.border)}>
+          <CardContent className="pt-8">
+            <div className="text-center">
+              <div className={cn('text-6xl font-bold mb-4', color.text)}>
+                {Math.round(percentage)}%
+              </div>
+              <p className={cn('text-lg font-semibold', color.text)}>
+                {isPassed ? '✅ Parabéns!' : '❌ Tente novamente'}
+              </p>
+              <p className="text-sm text-gray-600 mt-2">
+                {result.correctAnswers} corretas de {result.totalQuestions} questões
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <Card>
+            <CardContent className="pt-6 text-center">
+              <div className="text-3xl font-bold text-green-600">{result.correctAnswers}</div>
+              <p className="text-xs text-gray-600 mt-1">Corretas</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6 text-center">
+              <div className="text-3xl font-bold text-red-600">{result.wrongAnswers}</div>
+              <p className="text-xs text-gray-600 mt-1">Erradas</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6 text-center">
+              <div className="text-sm font-semibold">{result.timeSpentInSeconds}s</div>
+              <p className="text-xs text-gray-600 mt-1">Tempo</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Gabarito */}
+        <h2 className="text-xl font-bold mb-4">Gabarito Comentado</h2>
+        <div className="space-y-4">
+          {result.corrections?.map((correction: any, idx: number) => (
+            <Card key={idx} className={correction.isCorrect ? 'border-green-200' : 'border-red-200'}>
+              <CardHeader className={correction.isCorrect ? 'bg-green-50' : 'bg-red-50'}>
+                <div className="flex items-start gap-3">
+                  {correction.isCorrect ? (
+                    <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-1" />
+                  ) : (
+                    <XCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-1" />
+                  )}
+                  <div>
+                    <CardTitle className="text-base">Questão {idx + 1}</CardTitle>
+                    <CardDescription className="mt-1">
+                      {correction.isCorrect ? '✓ Resposta correta' : '✗ Resposta incorreta'}
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+
+              <CardContent className="pt-6 space-y-3">
+                {correction.userAnswer !== null ? (
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700 mb-1">Sua resposta:</p>
+                    <p className="text-sm text-gray-600">
+                      {String.fromCharCode(65 + correction.userAnswer)}) (Opção {correction.userAnswer + 1})
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">Não respondido</p>
+                )}
+
+                {!correction.isCorrect && (
+                  <div>
+                    <p className="text-sm font-semibold text-green-700 mb-1">Resposta correta:</p>
+                    <p className="text-sm text-gray-600">
+                      {String.fromCharCode(65 + correction.correctAnswer)}) (Opção {correction.correctAnswer + 1})
+                    </p>
+                  </div>
+                )}
+
+                {correction.explanation && (
+                  <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                    <p className="text-sm font-semibold text-blue-900 mb-1">📚 Explicação:</p>
+                    <p className="text-sm text-blue-800">{correction.explanation}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Actions */}
+        <div className="mt-8 flex gap-4 justify-center">
+          <Button variant="outline" onClick={() => router.back()}>
+            ← Voltar
+          </Button>
+          <Button onClick={() => router.push(`/quiz/${params.id}`)}>
+            Refazer Quiz
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
