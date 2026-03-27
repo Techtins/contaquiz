@@ -1,1 +1,0 @@
-export type DialogType = "createOrEdit" | "delete" | "none";
