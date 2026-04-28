@@ -30,7 +30,7 @@ Apos subir, acesse:
 
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:5000/api
-É normal dar route not found com o link acima va em index.ts na pasta routes para ver os endpoints da api
+É normal dar route not found com esse link  va em index.ts na pasta routes para ver os endpoints da api
 - Health check: http://localhost:5000/api/healthz
 
 ## Credenciais de acesso
