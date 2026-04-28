@@ -5,6 +5,7 @@ import UserModel, { UserSystemRole } from './models/User';
 import DisciplineModel from './models/Disciplina';
 import TopicModel from './models/Tema';
 import QuestionModel, { QuestionType, DifficultyLevel } from './models/Questao';
+import QuizModel from './models/QuizEntity';
 
 async function seed() {
     const uri = process.env.MONGO_URI;
@@ -200,6 +201,24 @@ async function seed() {
         }
     }
     console.log(`${questoes.length} questoes processadas`);
+
+    // --- Quizzes de exemplo ---
+    const someQuestions = await QuestionModel.find({ disciplineId: contGeral._id }).limit(5);
+    if (someQuestions.length > 0) {
+        const quizExists = await QuizModel.findOne({ title: 'Quiz Demo Contabilidade Geral' });
+        if (!quizExists) {
+            await QuizModel.create({
+                title: 'Quiz Demo Contabilidade Geral',
+                description: 'Pequeno quiz de exemplo para Contabilidade Geral',
+                disciplineId: contGeral._id,
+                questionIds: someQuestions.map((q) => q._id),
+                timeLimitSeconds: 600,
+                score: someQuestions.length * 10,
+                active: true,
+            } as any);
+            console.log('Quiz demo criado');
+        }
+    }
 
     console.log('\nSeed concluido com sucesso!');
     console.log('Credenciais de acesso:');

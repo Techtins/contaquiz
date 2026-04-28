@@ -13,9 +13,10 @@ export function Timer({ timeLeft, totalTime }: TimerProps) {
   const isLowTime = timeLeft <= 60;
   const isVeryLowTime = timeLeft <= 10;
 
-  const minutes = Math.floor(timeLeft / 60);
+  const hours = Math.floor(timeLeft / 3600);
+  const minutes = Math.floor((timeLeft % 3600) / 60);
   const seconds = timeLeft % 60;
-  const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
   return (
     <div className="flex flex-col gap-3 p-4 bg-white rounded-lg border">

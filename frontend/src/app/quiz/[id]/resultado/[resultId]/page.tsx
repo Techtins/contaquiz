@@ -1,26 +1,37 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { getQuizResult } from '@/services/modules/quiz.service';
 import { Button } from '@/components/ui/atoms/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/atoms/card';
 import { Loader2, AlertCircle, CheckCircle2, XCircle, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface ResultPageProps {
-  params: {
-    id: string;
-    resultId: string;
-  };
-}
+const formatDuration = (totalSeconds: number) => {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
 
-export default function ResultPage({ params }: ResultPageProps) {
+  const parts = [];
+
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0 || hours > 0) parts.push(`${minutes}min`);
+  parts.push(`${seconds}s`);
+
+  return parts.join(' ');
+};
+
+export default function ResultPage() {
   const router = useRouter();
+  const params = useParams<{ id: string; resultId: string }>();
+  const quizId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const resultId = Array.isArray(params.resultId) ? params.resultId[0] : params.resultId;
 
   const { data: result, isLoading, error } = useQuery({
-    queryKey: ['quizResult', params.resultId],
-    queryFn: () => getQuizResult(params.resultId),
+    queryKey: ['quizResult', resultId],
+    queryFn: () => getQuizResult(resultId),
+    enabled: !!resultId,
   });
 
   if (isLoading) {
@@ -108,7 +119,7 @@ export default function ResultPage({ params }: ResultPageProps) {
           </Card>
           <Card>
             <CardContent className="pt-6 text-center">
-              <div className="text-sm font-semibold">{result.timeSpentInSeconds}s</div>
+              <div className="text-sm font-semibold">{formatDuration(result.timeSpentInSeconds)}</div>
               <p className="text-xs text-gray-600 mt-1">Tempo</p>
             </CardContent>
           </Card>
@@ -169,10 +180,10 @@ export default function ResultPage({ params }: ResultPageProps) {
 
         {/* Actions */}
         <div className="mt-8 flex gap-4 justify-center">
-          <Button variant="outline" onClick={() => router.back()}>
+          <Button variant="outline" onClick={() => router.push('/aluno/quizzes')}>
             ← Voltar
           </Button>
-          <Button onClick={() => router.push(`/quiz/${params.id}`)}>
+          <Button onClick={() => router.push(`/quiz/${quizId}`)}>
             Refazer Quiz
           </Button>
         </div>
