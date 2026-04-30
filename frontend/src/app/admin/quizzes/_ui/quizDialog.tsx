@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/atoms/dialog";
 import { Button } from "@/components/ui/atoms/button";
 import { Input } from "@/components/ui/atoms/input";
@@ -11,6 +11,9 @@ import { Switch } from "@/components/ui/atoms/switch";
 import { Quiz, QuizFormData } from "@/lib/interface/IQuiz";
 import { useDisciplines } from "@/hooks/api/useDisciplines";
 import { useQuestions } from "@/hooks/api/useQuestions";
+import { useTopics } from "@/hooks/api/useTopics";
+import { DifficultyLevel } from "@/lib/interface/IQuestao";
+import { Badge } from "@/components/ui/atoms/badge";
 
 interface QuizDialogProps {
     isOpen: boolean;
@@ -20,6 +23,9 @@ interface QuizDialogProps {
 }
 
 export function QuizDialog({ isOpen, onOpenChange, onSubmit, initialData }: QuizDialogProps) {
+    const [selectedDifficulty, setSelectedDifficulty] = useState<string>("all");
+    const [selectedTopicId, setSelectedTopicId] = useState<string>("all");
+
     const initialFormData: QuizFormData = initialData
         ? {
             title: initialData.title,
@@ -44,13 +50,30 @@ export function QuizDialog({ isOpen, onOpenChange, onSubmit, initialData }: Quiz
 
     const { useListDisciplines } = useDisciplines();
     const { useListQuestions } = useQuestions();
+    const { useListTopics } = useTopics();
 
     const { data: disciplines } = useListDisciplines({ page: 1, limit: 100 });
+    const { data: topics } = useListTopics({
+        page: 1,
+        limit: 100,
+        ...(formData.disciplineId ? { disciplineId: formData.disciplineId } : {}),
+    });
     const { data: questions } = useListQuestions({
         page: 1,
         limit: 1000,
-        disciplineId: formData.disciplineId
+        disciplineId: formData.disciplineId,
+        ...(selectedDifficulty !== "all" ? { difficulty: selectedDifficulty as DifficultyLevel } : {}),
+        ...(selectedTopicId !== "all" ? { topicId: selectedTopicId } : {}),
     });
+
+    const topicNameById = useMemo(() => {
+        return new Map((topics?.items || []).map((topic: any) => [topic._id, topic.name]));
+    }, [topics]);
+
+    const formatDifficulty = (difficulty?: string) => {
+        if (!difficulty) return "-";
+        return difficulty.charAt(0) + difficulty.slice(1).toLowerCase();
+    };
 
     const handleSubmitClick = () => {
         onSubmit(formData);
@@ -94,7 +117,11 @@ export function QuizDialog({ isOpen, onOpenChange, onSubmit, initialData }: Quiz
                         <Label htmlFor="discipline">Disciplina</Label>
                         <Select
                             value={formData.disciplineId}
-                            onValueChange={(value) => setFormData({ ...formData, disciplineId: value, questions: [] })}
+                            onValueChange={(value) => {
+                                setFormData({ ...formData, disciplineId: value, questions: [] });
+                                setSelectedTopicId("all");
+                                setSelectedDifficulty("all");
+                            }}
                         >
                             <SelectTrigger id="discipline">
                                 <SelectValue placeholder="Selecione uma disciplina" />
@@ -109,12 +136,46 @@ export function QuizDialog({ isOpen, onOpenChange, onSubmit, initialData }: Quiz
                         </Select>
                     </div>
 
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                            <Label>Filtrar por tema / subtema</Label>
+                            <Select value={selectedTopicId} onValueChange={setSelectedTopicId} disabled={!formData.disciplineId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Todos os tópicos" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos os tópicos</SelectItem>
+                                    {topics?.items?.map((topic: any) => (
+                                        <SelectItem key={topic._id} value={topic._id}>
+                                            {topic.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div>
+                            <Label>Filtrar por dificuldade</Label>
+                            <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Todas as dificuldades" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todas as dificuldades</SelectItem>
+                                    {Object.values(DifficultyLevel).map((difficulty) => (
+                                        <SelectItem key={difficulty} value={difficulty}>{difficulty}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
                     {formData.disciplineId && (
                         <div>
                             <Label>Questões ({formData.questions.length})</Label>
                             <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-2">
                                 {questions?.items?.map((question: any) => (
-                                    <label key={question._id} className="flex items-center gap-2 cursor-pointer">
+                                    <label key={question._id} className="flex items-start gap-3 cursor-pointer rounded-lg border p-3 hover:bg-muted/30">
                                         <input
                                             type="checkbox"
                                             checked={formData.questions.includes(question._id)}
@@ -131,9 +192,23 @@ export function QuizDialog({ isOpen, onOpenChange, onSubmit, initialData }: Quiz
                                                     });
                                                 }
                                             }}
-                                            className="rounded"
+                                            className="mt-1 rounded"
                                         />
-                                        <span className="text-sm">{question.statement.slice(0, 60)}...</span>
+                                        <div className="min-w-0 flex-1 space-y-2">
+                                            <div className="text-sm font-medium leading-snug">{question.statement.slice(0, 80)}...</div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {(question.topicIds || []).length > 0 ? (
+                                                    question.topicIds.map((topicId: string) => (
+                                                        <Badge key={topicId} variant="secondary">
+                                                            {topicNameById.get(topicId) || topicId}
+                                                        </Badge>
+                                                    ))
+                                                ) : (
+                                                    <Badge variant="outline">Sem tema</Badge>
+                                                )}
+                                                <Badge variant="outline">{formatDifficulty(question.difficulty)}</Badge>
+                                            </div>
+                                        </div>
                                     </label>
                                 ))}
                                 {!questions?.items?.length && (

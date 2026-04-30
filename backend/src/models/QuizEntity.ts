@@ -8,9 +8,16 @@ export interface IQuiz {
     questionIds: Types.ObjectId[];
     timeLimitSeconds?: number | null; // tempo limite em segundos
     score: number; // pontuação total (int)
+    visibility: QuizVisibility;
+    createdByUserId?: Types.ObjectId | null;
     active: boolean;
     createdAt: Date;
     updatedAt: Date;
+}
+
+export enum QuizVisibility {
+    PUBLIC = 'PUBLIC',
+    PRIVATE = 'PRIVATE',
 }
 
 const QuizSchema = new Schema<IQuiz>(
@@ -21,11 +28,14 @@ const QuizSchema = new Schema<IQuiz>(
         questionIds: [{ type: Schema.Types.ObjectId, ref: 'Question', required: true }],
         timeLimitSeconds: { type: Number, default: null },
         score: { type: Number, required: true, default: 0 },
+        visibility: { type: String, enum: Object.values(QuizVisibility), default: QuizVisibility.PUBLIC, required: true },
+        createdByUserId: { type: Schema.Types.ObjectId, ref: 'User', default: null },
         active: { type: Boolean, default: true },
     },
     { timestamps: true, versionKey: false }
 );
 
 QuizSchema.index({ disciplineId: 1 });
+QuizSchema.index({ visibility: 1, createdByUserId: 1, active: 1 });
 
 export default models.Quiz || model<IQuiz>('Quiz', QuizSchema);

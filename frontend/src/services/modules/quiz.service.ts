@@ -1,5 +1,44 @@
 import api from "../apiConnect";
 import { Quiz, QuizFormData, QuizListParams } from "@/lib/interface/IQuiz";
+import { DifficultyLevel } from "@/lib/interface/IQuestao";
+
+type BackendResultQuestion = {
+    _id: string;
+    statement: string;
+    type: string;
+    disciplineId?: string;
+    disciplineName?: string;
+    topicIds?: Array<{ _id: string; name: string }>;
+    difficulty?: DifficultyLevel;
+};
+
+type BackendQuizCorrection = {
+    questionId: string;
+    userAnswer: number | null;
+    correctAnswer: number;
+    isCorrect: boolean;
+    explanation?: string;
+    isFavorite?: boolean;
+    question?: BackendResultQuestion;
+};
+
+type BackendQuizResult = {
+    _id: string;
+    quizId: string;
+    correctAnswers: number;
+    wrongAnswers: number;
+    totalQuestions: number;
+    percentage: number;
+    timeSpentInSeconds: number;
+    passingScore: number;
+    corrections: BackendQuizCorrection[];
+};
+
+export type QuizResult = BackendQuizResult;
+
+export type QuestionFavoriteState = {
+    questionIds: string[];
+};
 
 type BackendQuiz = {
     _id: string;
@@ -9,6 +48,7 @@ type BackendQuiz = {
     questionIds?: Array<any>;
     timeLimitSeconds?: number | null;
     score?: number | null;
+    visibility?: 'PUBLIC' | 'PRIVATE';
     active: boolean;
     createdAt: string;
     updatedAt: string;
@@ -23,6 +63,7 @@ const mapQuizFromBackend = (quiz: BackendQuiz): Quiz => ({
     timeLimit: quiz.timeLimitSeconds ?? 1800,
     passingScore: quiz.score ?? 0,
     active: quiz.active,
+    visibility: quiz.visibility,
     createdAt: quiz.createdAt,
     updatedAt: quiz.updatedAt,
 });
@@ -34,6 +75,7 @@ const mapQuizToBackend = (payload: QuizFormData) => ({
     questionIds: payload.questions,
     timeLimitSeconds: payload.timeLimit,
     score: payload.passingScore,
+    visibility: payload.visibility,
     active: payload.active,
 });
 
@@ -67,6 +109,27 @@ export const createQuiz = async (payload: QuizFormData) => {
     });
 };
 
+export const generateQuiz = async (payload: {
+    title?: string;
+    description?: string;
+    disciplineId?: string;
+    topicIds?: string[];
+    questionCount?: number;
+    questionsPerTopic?: number;
+    difficulty?: string;
+    mixedDifficulty?: boolean;
+    timeLimitSeconds?: number;
+    score?: number;
+    active?: boolean;
+    visibility?: 'PUBLIC' | 'PRIVATE';
+}) => {
+    const { data } = await api.post('/quizzes/generate', payload);
+    return mapQuizFromBackend({
+        ...data.data,
+        questionIds: data.data?.questionIds || data.data?.questions || [],
+    });
+};
+
 export const updateQuiz = async (id: string, payload: Partial<QuizFormData>) => {
     const { data } = await api.put(`/quizzes/${id}`, {
         ...payload,
@@ -92,5 +155,18 @@ export const submitQuiz = async (id: string, answers: Record<string, number>, ti
 
 export const getQuizResult = async (resultId: string) => {
     const { data } = await api.get(`/quizzes/resultados/${resultId}`);
-    return data.data;
+    return data.data as QuizResult;
+};
+
+export const getFavoriteQuestionIds = async (questionIds?: string[]) => {
+    const { data } = await api.get('/question-favorites', {
+        params: questionIds?.length ? { questionIds: questionIds.join(',') } : undefined,
+    });
+
+    return data.data as QuestionFavoriteState;
+};
+
+export const toggleQuestionFavorite = async (questionId: string) => {
+    const { data } = await api.post(`/questions/${questionId}/favorite`);
+    return data.data as { favorited: boolean };
 };

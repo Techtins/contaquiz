@@ -22,14 +22,21 @@ router.get(
     '/',
     validate(listQuestionsSchema),
     ah(async (req, res) => {
-        const { page, limit, filter, active, disciplineId, topicIds, difficulty, type } = req.query as any;
+        const { page, limit, filter, active, disciplineId, topicId, topicIds, difficulty, type } = req.query as any;
+        const normalizedTopicIds = Array.isArray(topicIds)
+            ? topicIds
+            : typeof topicIds === 'string' && topicIds.trim()
+                ? topicIds.split(',').map((item: string) => item.trim()).filter(Boolean)
+                : typeof topicId === 'string' && topicId.trim()
+                    ? [topicId.trim()]
+                    : undefined;
         const result = await listQuestions({
             page: page ? Number(page) : undefined,
             limit: limit ? Number(limit) : undefined,
             filter,
             active, // já vem boolean pelo schema (se usar o validate)
             disciplineId,
-            topicIds,
+            topicIds: normalizedTopicIds,
             difficulty,
             type
         });

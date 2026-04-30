@@ -40,7 +40,11 @@ export const updateQuestionSchema = z.object({
 export const listQuestionsSchema = listSchema.extend({
     query: listSchema.shape.query.extend({
         disciplineId: z.string().optional(),
-        topicIds: z.array(z.string().min(1)).min(1).optional(),
+        topicId: z.string().optional(),
+        topicIds: z.union([
+            z.string(),
+            z.array(z.string().min(1)),
+        ]).optional(),
         difficulty: z.enum(DifficultyLevel).optional(),
         type: z.enum(QuestionType).optional(),
     }),

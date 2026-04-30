@@ -10,6 +10,7 @@ export interface Quiz {
     timeLimit: number; // em segundos
     passingScore: number; // percentual (0-100)
     active: boolean;
+    visibility?: 'PUBLIC' | 'PRIVATE';
     createdAt: string;
     updatedAt: string;
 }
@@ -22,6 +23,7 @@ export interface QuizFormData {
     timeLimit: number;
     passingScore: number;
     active: boolean;
+    visibility?: 'PUBLIC' | 'PRIVATE';
 }
 
 export interface QuizListParams extends ListParams {

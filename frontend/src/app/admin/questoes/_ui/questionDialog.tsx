@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/atoms/button"
 import { Input } from "@/components/ui/atoms/input"
 import { Label } from "@/components/ui/atoms/label"
@@ -6,11 +6,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Textarea } from "@/components/ui/atoms/textarea"
 import { Switch } from "@/components/ui/atoms/switch"
 import { DifficultyLevel, Question, QuestionFormData, QuestionType } from "@/lib/interface/IQuestao"
-import { Trash2 } from "lucide-react"
+import { Check, Trash2 } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/atoms/select"
 import { useDisciplines } from "@/hooks/api/useDisciplines"
+import { useTopics } from "@/hooks/api/useTopics"
 import { Discipline } from "@/lib/interface/IDisciplina"
-// import { useTopics } from "@/hooks/api/useTopics"
+import { Topic } from "@/lib/interface/ITopico"
 
 interface QuestionDialogProps {
     isOpen: boolean;
@@ -33,10 +34,16 @@ export function QuestionDialog({ isOpen, onOpenChange, onSubmit, initialData }: 
     const [formData, setFormData] = useState<QuestionFormData>(defaultFormData);
 
     const { useListDisciplines } = useDisciplines();
-    // const { useListTopics } = useTopics();
+    const { useListTopics } = useTopics();
 
-    // const { data: dataTopics } = useListTopics({ page: 1, limit: 0 });
     const { data: dataDisciplines } = useListDisciplines({ page: 1, limit: 0 });
+    const { data: dataTopics } = useListTopics({
+        page: 1,
+        limit: 100,
+        ...(formData.disciplineId ? { disciplineId: formData.disciplineId } : {}),
+    });
+
+    const topics = useMemo(() => dataTopics?.items || [], [dataTopics]);
 
     useEffect(() => {
         if (isOpen && initialData) {
@@ -53,6 +60,14 @@ export function QuestionDialog({ isOpen, onOpenChange, onSubmit, initialData }: 
             setFormData(defaultFormData);
         }
     }, [initialData, isOpen]);
+
+    useEffect(() => {
+        if (!formData.disciplineId) return;
+        setFormData((current) => ({
+            ...current,
+            topicIds: current.topicIds.filter((topicId) => topics.some((topic) => topic._id === topicId)),
+        }));
+    }, [formData.disciplineId, topics]);
 
     const handleFormSubmit: React.FormEventHandler<HTMLFormElement> = (event) => {
         event.preventDefault();
@@ -140,7 +155,10 @@ export function QuestionDialog({ isOpen, onOpenChange, onSubmit, initialData }: 
                     {/* Disciplina e Tópicos */}
                     <div>
                         <Label htmlFor="disciplineId">Disciplina da Questão *</Label>
-                        <Select onValueChange={(value) => setFormData({ ...formData, disciplineId: value })} defaultValue={formData.disciplineId}>
+                        <Select
+                            value={formData.disciplineId || undefined}
+                            onValueChange={(value) => setFormData({ ...formData, disciplineId: value, topicIds: [] })}
+                        >
                             <SelectTrigger>
                                 <SelectValue placeholder="Selecione a disciplina" />
                             </SelectTrigger>
@@ -152,6 +170,48 @@ export function QuestionDialog({ isOpen, onOpenChange, onSubmit, initialData }: 
                                 ))}
                             </SelectContent>
                         </Select>
+                    </div>
+
+                    {/* Tópicos / subtemas */}
+                    <div>
+                        <Label>Tema / subtema</Label>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                            Selecione um ou mais tópicos vinculados à disciplina para permitir quizzes por tema.
+                        </p>
+                        <div className="mt-3 space-y-2 rounded-lg border p-3">
+                            {!formData.disciplineId ? (
+                                <p className="text-sm text-muted-foreground">Escolha uma disciplina para carregar os tópicos.</p>
+                            ) : topics.length === 0 ? (
+                                <p className="text-sm text-muted-foreground">Nenhum tópico encontrado para esta disciplina.</p>
+                            ) : (
+                                <div className="flex flex-wrap gap-2">
+                                    {topics.map((topic: Topic) => {
+                                        const selected = formData.topicIds?.includes(topic._id);
+                                        return (
+                                            <button
+                                                key={topic._id}
+                                                type="button"
+                                                onClick={() => {
+                                                    const exists = formData.topicIds?.includes(topic._id);
+                                                    const nextTopicIds = exists
+                                                        ? formData.topicIds.filter((id) => id !== topic._id)
+                                                        : [...(formData.topicIds || []), topic._id];
+                                                    setFormData({ ...formData, topicIds: nextTopicIds });
+                                                }}
+                                                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                                                    selected
+                                                        ? 'border-primary bg-primary text-primary-foreground'
+                                                        : 'border-border bg-background hover:border-primary/40 hover:bg-muted/40'
+                                                }`}
+                                            >
+                                                {selected && <Check className="h-3.5 w-3.5" />}
+                                                {topic.name}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Dificuldade e Tipo */}

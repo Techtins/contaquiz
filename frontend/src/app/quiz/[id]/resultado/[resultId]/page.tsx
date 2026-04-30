@@ -1,12 +1,14 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
-import { getQuizResult } from '@/services/modules/quiz.service';
+import { getQuizResult, toggleQuestionFavorite } from '@/services/modules/quiz.service';
 import { Button } from '@/components/ui/atoms/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/atoms/card';
-import { Loader2, AlertCircle, CheckCircle2, XCircle, ArrowLeft } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle2, XCircle, ArrowLeft, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/useToast';
 
 const formatDuration = (totalSeconds: number) => {
   const hours = Math.floor(totalSeconds / 3600);
@@ -24,15 +26,58 @@ const formatDuration = (totalSeconds: number) => {
 
 export default function ResultPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const params = useParams<{ id: string; resultId: string }>();
   const quizId = Array.isArray(params.id) ? params.id[0] : params.id;
   const resultId = Array.isArray(params.resultId) ? params.resultId[0] : params.resultId;
+  const [favoriteQuestionIds, setFavoriteQuestionIds] = useState<string[]>([]);
+  const [updatingFavoriteId, setUpdatingFavoriteId] = useState<string | null>(null);
 
   const { data: result, isLoading, error } = useQuery({
     queryKey: ['quizResult', resultId],
     queryFn: () => getQuizResult(resultId),
     enabled: !!resultId,
   });
+
+  useEffect(() => {
+    if (!result?.corrections) return;
+    setFavoriteQuestionIds(
+      result.corrections
+        .filter((correction: any) => correction.isFavorite)
+        .map((correction: any) => correction.questionId),
+    );
+  }, [result]);
+
+  const favoriteSet = useMemo(() => new Set(favoriteQuestionIds), [favoriteQuestionIds]);
+
+  const handleToggleFavorite = async (questionId: string) => {
+    try {
+      setUpdatingFavoriteId(questionId);
+      const response = await toggleQuestionFavorite(questionId);
+      setFavoriteQuestionIds((current) => {
+        const next = new Set(current);
+        if (response.favorited) {
+          next.add(questionId);
+        } else {
+          next.delete(questionId);
+        }
+        return Array.from(next);
+      });
+
+      toast({
+        title: response.favorited ? 'Questão favoritada' : 'Questão removida dos favoritos',
+        description: 'Ela ficará disponível para revisão futura.',
+      });
+    } catch {
+      toast({
+        title: 'Erro ao atualizar favorito',
+        description: 'Não foi possível alterar o favorito agora.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUpdatingFavoriteId(null);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -142,11 +187,37 @@ export default function ResultPage() {
                     <CardDescription className="mt-1">
                       {correction.isCorrect ? '✓ Resposta correta' : '✗ Resposta incorreta'}
                     </CardDescription>
+                    {correction.question?.statement && (
+                      <p className="mt-2 max-w-3xl text-sm text-gray-700">
+                        {correction.question.statement}
+                      </p>
+                    )}
                   </div>
+                  {correction.questionId && (
+                    <Button
+                      type="button"
+                      variant={favoriteSet.has(correction.questionId) ? 'default' : 'outline'}
+                      className="ml-auto gap-2"
+                      onClick={() => handleToggleFavorite(correction.questionId)}
+                      disabled={updatingFavoriteId === correction.questionId}
+                    >
+                      <Star className={cn('h-4 w-4', favoriteSet.has(correction.questionId) && 'fill-current')} />
+                      {favoriteSet.has(correction.questionId) ? 'Favoritada' : 'Favoritar'}
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
 
               <CardContent className="pt-6 space-y-3">
+                {correction.question?.difficulty && (
+                  <div className="flex flex-wrap gap-2 text-xs text-gray-500">
+                    <span className="rounded-full bg-gray-100 px-2 py-1">Dificuldade: {correction.question.difficulty}</span>
+                    {correction.question.disciplineName && (
+                      <span className="rounded-full bg-gray-100 px-2 py-1">Disciplina: {correction.question.disciplineName}</span>
+                    )}
+                  </div>
+                )}
+
                 {correction.userAnswer !== null ? (
                   <div>
                     <p className="text-sm font-semibold text-gray-700 mb-1">Sua resposta:</p>
