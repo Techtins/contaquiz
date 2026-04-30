@@ -2,7 +2,7 @@ import QuizModel from '../models/QuizEntity';
 import DisciplineModel from '../models/Disciplina';
 import QuestionModel from '../models/Questao';
 import QuizResultModel from '../models/QuizResult';
-import { CreateQuizDTO, ListQuizzesOptions, UpdateQuizDTO } from '../dtos/quiz.dto';
+import { CreateQuizDTO, ListQuizzesOptions, UpdateQuizDTO, IStudentHistory, IQuizHistoryItem } from '../dtos/quiz.dto';
 import { httpError } from '../middlewares/error';
 
 function toFrontendQuiz(doc: any) {
@@ -86,7 +86,7 @@ export async function deleteQuiz(id: string) {
     return deleted;
 }
 
-export async function submitQuiz(id: string, answers: Record<string, number>, timeSpentInSeconds?: number) {
+export async function submitQuiz(id: string, answers: Record<string, number>, timeSpentInSeconds?: number, userId?: string) {
     const quiz = await QuizModel.findById(id).populate('questionIds');
     if (!quiz) throw httpError(404, 'Quiz não encontrado');
 
@@ -111,7 +111,7 @@ export async function submitQuiz(id: string, answers: Record<string, number>, ti
     const wrongAnswers = questionDocs.length - correctAnswers;
     const percentage = questionDocs.length ? (correctAnswers / questionDocs.length) * 100 : 0;
 
-    const result = await QuizResultModel.create({
+    const createData: any = {
         quizId: quiz._id,
         correctAnswers,
         wrongAnswers,
@@ -120,7 +120,14 @@ export async function submitQuiz(id: string, answers: Record<string, number>, ti
         timeSpentInSeconds: timeSpentInSeconds ?? 0,
         passingScore: (quiz as any).score ?? 0,
         corrections,
-    });
+    };
+
+    // Adiciona userId se fornecido
+    if (userId) {
+        createData.userId = userId;
+    }
+
+    const result = await QuizResultModel.create(createData);
 
     return {
         _id: result._id,
@@ -148,5 +155,88 @@ export async function getQuizResultById(resultId: string) {
         timeSpentInSeconds: result.timeSpentInSeconds,
         passingScore: result.passingScore,
         corrections: result.corrections,
+    };
+}
+
+export async function getStudentHistory(userId: string): Promise<IStudentHistory> {
+    // Busca todos os resultados do usuário agrupados por quiz
+    const results = await QuizResultModel.find({ userId: userId })
+        .populate('quizId', 'title disciplineId')
+        .populate({
+            path: 'quizId',
+            populate: {
+                path: 'disciplineId',
+                select: 'name'
+            }
+        })
+        .sort({ createdAt: -1 });
+
+    if (results.length === 0) {
+        return {
+            totalQuizzesCompleted: 0,
+            averageScore: 0,
+            totalStudyTime: 0,
+            quizzes: [],
+        };
+    }
+
+    // Agrupar resultados por quiz
+    const quizMap = new Map<string, any>();
+    
+    results.forEach((result: any) => {
+        const quizId = result.quizId._id.toString();
+        
+        if (!quizMap.has(quizId)) {
+            quizMap.set(quizId, {
+                quizId,
+                title: result.quizId.title,
+                discipline: result.quizId.disciplineId?.name || '',
+                results: [],
+            });
+        }
+        
+        quizMap.get(quizId).results.push({
+            percentage: result.percentage,
+            timeSpentInSeconds: result.timeSpentInSeconds,
+            createdAt: result.createdAt,
+        });
+    });
+
+    // Processar dados agregados
+    const quizzes: IQuizHistoryItem[] = [];
+    let totalScore = 0;
+    let totalTime = 0;
+
+    quizMap.forEach((data) => {
+        const attempts = data.results.length;
+        const bestScore = Math.max(...data.results.map((r: any) => r.percentage));
+        const lastAttemptDate = data.results[0].createdAt;
+        const totalTimeSpent = data.results.reduce((sum: number, r: any) => sum + r.timeSpentInSeconds, 0);
+        const averageTime = Math.round(totalTimeSpent / attempts);
+
+        quizzes.push({
+            _id: data.quizId,
+            quizId: data.quizId,
+            title: data.title,
+            discipline: data.discipline || undefined,
+            attempts,
+            bestScore: Math.round(bestScore),
+            lastAttemptDate,
+            totalTimeSpent,
+            averageTime,
+        });
+
+        totalScore += bestScore;
+        totalTime += totalTimeSpent;
+    });
+
+    // Calcular média geral e tempo total
+    const averageScore = quizzes.length > 0 ? Math.round(totalScore / quizzes.length) : 0;
+    
+    return {
+        totalQuizzesCompleted: quizzes.length,
+        averageScore,
+        totalStudyTime: totalTime,
+        quizzes: quizzes.sort((a, b) => new Date(b.lastAttemptDate).getTime() - new Date(a.lastAttemptDate).getTime()),
     };
 }

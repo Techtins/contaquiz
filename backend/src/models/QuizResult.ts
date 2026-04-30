@@ -10,6 +10,7 @@ export interface IQuizCorrection {
 
 export interface IQuizResult {
     _id: Types.ObjectId;
+    userId?: Types.ObjectId;
     quizId: Types.ObjectId;
     correctAnswers: number;
     wrongAnswers: number;
@@ -35,6 +36,7 @@ const QuizCorrectionSchema = new Schema<IQuizCorrection>(
 
 const QuizResultSchema = new Schema<IQuizResult>(
     {
+        userId: { type: Schema.Types.ObjectId, ref: 'User', index: true },
         quizId: { type: Schema.Types.ObjectId, ref: 'Quiz', required: true, index: true },
         correctAnswers: { type: Number, required: true },
         wrongAnswers: { type: Number, required: true },
@@ -46,5 +48,7 @@ const QuizResultSchema = new Schema<IQuizResult>(
     },
     { timestamps: true, versionKey: false }
 );
+
+QuizResultSchema.index({ userId: 1, createdAt: -1 });
 
 export default models.QuizResult || model<IQuizResult>('QuizResult', QuizResultSchema);

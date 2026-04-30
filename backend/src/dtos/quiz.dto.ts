@@ -35,3 +35,22 @@ export const listQuizzesSchema = listSchema.extend({
 export type CreateQuizDTO = z.infer<typeof createQuizSchema>['body'];
 export type UpdateQuizDTO = z.infer<typeof updateQuizSchema>['body'];
 export type ListQuizzesOptions = z.infer<typeof listQuizzesSchema>['query'];
+
+export interface IQuizHistoryItem {
+    _id: string;
+    quizId: string;
+    title: string;
+    discipline?: string;
+    attempts: number;
+    bestScore: number;
+    lastAttemptDate: Date;
+    totalTimeSpent: number; // em segundos
+    averageTime: number; // em segundos
+}
+
+export interface IStudentHistory {
+    totalQuizzesCompleted: number;
+    averageScore: number;
+    totalStudyTime: number; // em segundos
+    quizzes: IQuizHistoryItem[];
+}

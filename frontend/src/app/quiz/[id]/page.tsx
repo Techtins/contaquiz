@@ -159,22 +159,7 @@ export default function QuizPage() {
               />
             )}
 
-            <div className="mt-8 flex gap-4">
-              <Button
-                variant="outline"
-                onClick={quizState.goToPreviousQuestion}
-                disabled={quizState.currentQuestionIndex === 0}
-              >
-                ← Anterior
-              </Button>
-
-              <Button
-                onClick={quizState.goToNextQuestion}
-                disabled={quizState.currentQuestionIndex === quizState.totalQuestions - 1}
-              >
-                Próxima →
-              </Button>
-            </div>
+            {/* navigation buttons removed here to avoid duplication; use QuestionNavigator on the right */}
           </div>
 
           <div className="lg:col-span-1">
