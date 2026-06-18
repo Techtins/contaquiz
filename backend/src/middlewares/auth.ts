@@ -24,6 +24,24 @@ export function authenticate(req: AuthRequest, res: Response, next: NextFunction
     }
 }
 
+export function optionalAuthenticate(req: AuthRequest, _res: Response, next: NextFunction) {
+    const header = req.headers.authorization;
+    if (!header?.startsWith('Bearer ')) {
+        next();
+        return;
+    }
+
+    try {
+        const payload = verifyToken(header.slice(7));
+        req.userId = payload.sub;
+        req.userRole = payload.role;
+    } catch {
+        // Ignore invalid optional tokens so public listings still work.
+    }
+
+    next();
+}
+
 export function authorize(...roles: UserSystemRole[]) {
     return (req: AuthRequest, res: Response, next: NextFunction) => {
         if (!req.userRole || !roles.includes(req.userRole as UserSystemRole)) {

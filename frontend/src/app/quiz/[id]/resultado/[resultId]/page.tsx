@@ -1,27 +1,83 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
-import { getQuizResult } from '@/services/modules/quiz.service';
+import { useParams, useRouter } from 'next/navigation';
+import { getQuizResult, toggleQuestionFavorite } from '@/services/modules/quiz.service';
 import { Button } from '@/components/ui/atoms/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/atoms/card';
-import { Loader2, AlertCircle, CheckCircle2, XCircle, ArrowLeft } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle2, XCircle, ArrowLeft, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/useToast';
 
-interface ResultPageProps {
-  params: {
-    id: string;
-    resultId: string;
-  };
-}
+const formatDuration = (totalSeconds: number) => {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
 
-export default function ResultPage({ params }: ResultPageProps) {
+  const parts = [];
+
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0 || hours > 0) parts.push(`${minutes}min`);
+  parts.push(`${seconds}s`);
+
+  return parts.join(' ');
+};
+
+export default function ResultPage() {
   const router = useRouter();
+  const { toast } = useToast();
+  const params = useParams<{ id: string; resultId: string }>();
+  const quizId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const resultId = Array.isArray(params.resultId) ? params.resultId[0] : params.resultId;
+  const [favoriteQuestionIds, setFavoriteQuestionIds] = useState<string[]>([]);
+  const [updatingFavoriteId, setUpdatingFavoriteId] = useState<string | null>(null);
 
   const { data: result, isLoading, error } = useQuery({
-    queryKey: ['quizResult', params.resultId],
-    queryFn: () => getQuizResult(params.resultId),
+    queryKey: ['quizResult', resultId],
+    queryFn: () => getQuizResult(resultId),
+    enabled: !!resultId,
   });
+
+  useEffect(() => {
+    if (!result?.corrections) return;
+    setFavoriteQuestionIds(
+      result.corrections
+        .filter((correction: any) => correction.isFavorite)
+        .map((correction: any) => correction.questionId),
+    );
+  }, [result]);
+
+  const favoriteSet = useMemo(() => new Set(favoriteQuestionIds), [favoriteQuestionIds]);
+
+  const handleToggleFavorite = async (questionId: string) => {
+    try {
+      setUpdatingFavoriteId(questionId);
+      const response = await toggleQuestionFavorite(questionId);
+      setFavoriteQuestionIds((current) => {
+        const next = new Set(current);
+        if (response.favorited) {
+          next.add(questionId);
+        } else {
+          next.delete(questionId);
+        }
+        return Array.from(next);
+      });
+
+      toast({
+        title: response.favorited ? 'Questão favoritada' : 'Questão removida dos favoritos',
+        description: 'Ela ficará disponível para revisão futura.',
+      });
+    } catch {
+      toast({
+        title: 'Erro ao atualizar favorito',
+        description: 'Não foi possível alterar o favorito agora.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUpdatingFavoriteId(null);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -108,7 +164,7 @@ export default function ResultPage({ params }: ResultPageProps) {
           </Card>
           <Card>
             <CardContent className="pt-6 text-center">
-              <div className="text-sm font-semibold">{result.timeSpentInSeconds}s</div>
+              <div className="text-sm font-semibold">{formatDuration(result.timeSpentInSeconds)}</div>
               <p className="text-xs text-gray-600 mt-1">Tempo</p>
             </CardContent>
           </Card>
@@ -131,11 +187,37 @@ export default function ResultPage({ params }: ResultPageProps) {
                     <CardDescription className="mt-1">
                       {correction.isCorrect ? '✓ Resposta correta' : '✗ Resposta incorreta'}
                     </CardDescription>
+                    {correction.question?.statement && (
+                      <p className="mt-2 max-w-3xl text-sm text-gray-700">
+                        {correction.question.statement}
+                      </p>
+                    )}
                   </div>
+                  {correction.questionId && (
+                    <Button
+                      type="button"
+                      variant={favoriteSet.has(correction.questionId) ? 'default' : 'outline'}
+                      className="ml-auto gap-2"
+                      onClick={() => handleToggleFavorite(correction.questionId)}
+                      disabled={updatingFavoriteId === correction.questionId}
+                    >
+                      <Star className={cn('h-4 w-4', favoriteSet.has(correction.questionId) && 'fill-current')} />
+                      {favoriteSet.has(correction.questionId) ? 'Favoritada' : 'Favoritar'}
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
 
               <CardContent className="pt-6 space-y-3">
+                {correction.question?.difficulty && (
+                  <div className="flex flex-wrap gap-2 text-xs text-gray-500">
+                    <span className="rounded-full bg-gray-100 px-2 py-1">Dificuldade: {correction.question.difficulty}</span>
+                    {correction.question.disciplineName && (
+                      <span className="rounded-full bg-gray-100 px-2 py-1">Disciplina: {correction.question.disciplineName}</span>
+                    )}
+                  </div>
+                )}
+
                 {correction.userAnswer !== null ? (
                   <div>
                     <p className="text-sm font-semibold text-gray-700 mb-1">Sua resposta:</p>
@@ -169,10 +251,10 @@ export default function ResultPage({ params }: ResultPageProps) {
 
         {/* Actions */}
         <div className="mt-8 flex gap-4 justify-center">
-          <Button variant="outline" onClick={() => router.back()}>
+          <Button variant="outline" onClick={() => router.push('/aluno/quizzes')}>
             ← Voltar
           </Button>
-          <Button onClick={() => router.push(`/quiz/${params.id}`)}>
+          <Button onClick={() => router.push(`/quiz/${quizId}`)}>
             Refazer Quiz
           </Button>
         </div>

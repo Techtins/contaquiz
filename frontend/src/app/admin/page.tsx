@@ -4,9 +4,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/atoms/card"
 import { Button } from "@/components/ui/atoms/button"
 import { BookOpen, Users, FileQuestion, Trophy, Settings, Gamepad2 } from "lucide-react"
+import useAdmin from '@/hooks/api/useAdmin'
 import Link from "next/link"
 
 export default function AdminDashboard() {
+    const { useGetStats } = useAdmin;
+    const { data: stats } = useGetStats();
     return (
         <div className="space-y-6">
             {/* Page Header */}
@@ -24,7 +27,7 @@ export default function AdminDashboard() {
                                 <BookOpen className="h-6 w-6 text-primary" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">12</p>
+                                <p className="text-2xl font-bold">{stats?.disciplines ?? '—'}</p>
                                 <p className="text-sm text-muted-foreground">Disciplinas</p>
                             </div>
                         </div>
@@ -38,7 +41,7 @@ export default function AdminDashboard() {
                                 <FileQuestion className="h-6 w-6 text-primary" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">1,247</p>
+                                <p className="text-2xl font-bold">{stats?.questions ?? '—'}</p>
                                 <p className="text-sm text-muted-foreground">Questões</p>
                             </div>
                         </div>
@@ -52,7 +55,7 @@ export default function AdminDashboard() {
                                 <Users className="h-6 w-6 text-primary" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">3,456</p>
+                                <p className="text-2xl font-bold">{stats?.users ?? '—'}</p>
                                 <p className="text-sm text-muted-foreground">Usuários</p>
                             </div>
                         </div>
@@ -66,7 +69,7 @@ export default function AdminDashboard() {
                                 <Trophy className="h-6 w-6 text-primary" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">8,923</p>
+                                <p className="text-2xl font-bold">{stats?.quizResults ?? '—'}</p>
                                 <p className="text-sm text-muted-foreground">Quizzes Realizados</p>
                             </div>
                         </div>

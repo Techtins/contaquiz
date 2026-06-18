@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/atoms/button"
 import { BookOpen, Trophy, Play, Clock, Target, TrendingUp } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
+import { useStudentHistory } from "@/hooks/api/useHistory"
 import { getAuthSession } from "@/lib/auth"
 import { useDisciplines } from "@/hooks/api/useDisciplines"
 
@@ -19,6 +20,7 @@ export default function AlunoDashboard() {
     }, [])
 
     const firstName = userName.split(" ")[0]
+    const { data: history } = useStudentHistory()
 
     return (
         <div className="space-y-6">
@@ -53,8 +55,8 @@ export default function AlunoDashboard() {
                                 <Target className="h-6 w-6 text-primary" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">--</p>
-                                <p className="text-sm text-muted-foreground">Quizzes realizados</p>
+                                                <p className="text-2xl font-bold">{history?.totalQuizzesCompleted ?? '--'}</p>
+                                                <p className="text-sm text-muted-foreground">Quizzes realizados</p>
                             </div>
                         </div>
                     </CardContent>
@@ -67,8 +69,8 @@ export default function AlunoDashboard() {
                                 <TrendingUp className="h-6 w-6 text-primary" />
                             </div>
                             <div>
-                                <p className="text-2xl font-bold">--</p>
-                                <p className="text-sm text-muted-foreground">Media de acertos</p>
+                                                <p className="text-2xl font-bold">{history?.averageScore ? `${history.averageScore}%` : '--'}</p>
+                                                <p className="text-sm text-muted-foreground">Media de acertos</p>
                             </div>
                         </div>
                     </CardContent>

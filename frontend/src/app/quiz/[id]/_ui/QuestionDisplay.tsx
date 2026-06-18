@@ -126,19 +126,7 @@ export function QuestionDisplay({
         </Button>
       )}
 
-      <div className="flex items-center justify-center gap-2 text-sm">
-        {isAnswered ? (
-          <>
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <span className="text-green-700 font-medium">Respondida</span>
-          </>
-        ) : (
-          <>
-            <Circle className="h-4 w-4 text-gray-400" />
-            <span className="text-gray-600">Clique para responder</span>
-          </>
-        )}
-      </div>
+      {/* status indicator removed to avoid redundancy with navigator */}
     </div>
   );
 }

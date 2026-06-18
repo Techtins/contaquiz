@@ -43,6 +43,7 @@ export interface QuestionFormData {
 
 export interface QuestionListParams extends ListParams {
     disciplineId?: string;
+    topicId?: string;
     topicIds?: string[];
     difficulty?: DifficultyLevel;
     type?: QuestionType;

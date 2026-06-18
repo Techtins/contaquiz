@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useQuiz } from '@/hooks/useQuiz';
 import { getQuizById, submitQuiz } from '@/services/modules/quiz.service';
 import { useToast } from '@/hooks/useToast';
@@ -14,21 +14,18 @@ import { Card, CardContent } from '@/components/ui/atoms/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/atoms/alertDialog';
 import { Loader2, AlertCircle, ChevronLeft, Check } from 'lucide-react';
 
-interface QuizPageProps {
-  params: {
-    id: string;
-  };
-}
-
-export default function QuizPage({ params }: QuizPageProps) {
+export default function QuizPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const params = useParams<{ id: string }>();
+  const quizId = Array.isArray(params.id) ? params.id[0] : params.id;
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: quiz, isLoading, error } = useQuery({
-    queryKey: ['quiz', params.id],
-    queryFn: () => getQuizById(params.id),
+    queryKey: ['quiz', quizId],
+    queryFn: () => getQuizById(quizId),
+    enabled: !!quizId,
   });
 
   const quizState = useQuiz(quiz?.questions || [], quiz?.timeLimit || 1800);
@@ -49,8 +46,9 @@ export default function QuizPage({ params }: QuizPageProps) {
   const handleSubmitQuiz = async () => {
     try {
       setIsSubmitting(true);
+      const timeSpentInSeconds = Math.max(0, (quiz?.timeLimit || 1800) - quizState.timeLeft);
 
-      const result = await submitQuiz(params.id, quizState.answers);
+      const result = await submitQuiz(quizId, quizState.answers, timeSpentInSeconds);
 
       toast({
         title: 'Quiz submetido!',
@@ -58,7 +56,7 @@ export default function QuizPage({ params }: QuizPageProps) {
       });
 
       quizState.setIsSubmitted(true);
-      router.push(`/quiz/${params.id}/resultado/${result._id}`);
+      router.push(`/quiz/${quizId}/resultado/${result._id}`);
     } catch (err) {
       toast({
         title: 'Erro ao submeter',
@@ -161,22 +159,7 @@ export default function QuizPage({ params }: QuizPageProps) {
               />
             )}
 
-            <div className="mt-8 flex gap-4">
-              <Button
-                variant="outline"
-                onClick={quizState.goToPreviousQuestion}
-                disabled={quizState.currentQuestionIndex === 0}
-              >
-                ← Anterior
-              </Button>
-
-              <Button
-                onClick={quizState.goToNextQuestion}
-                disabled={quizState.currentQuestionIndex === quizState.totalQuestions - 1}
-              >
-                Próxima →
-              </Button>
-            </div>
+            {/* navigation buttons removed here to avoid duplication; use QuestionNavigator on the right */}
           </div>
 
           <div className="lg:col-span-1">
@@ -198,9 +181,9 @@ export default function QuizPage({ params }: QuizPageProps) {
             <AlertDialogDescription>
               Você respondeu <strong>{quizState.answeredCount} de {quizState.totalQuestions}</strong> questões.
               {quizState.answeredCount < quizState.totalQuestions && (
-                <p className="mt-2 text-orange-600">
+                <span className="block mt-2 text-orange-600">
                   ⚠️ {quizState.totalQuestions - quizState.answeredCount} questões sem resposta.
-                </p>
+                </span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
