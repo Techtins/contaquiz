@@ -1,25 +1,25 @@
-.PHONY: build setup up down restart logs logs-back logs-front logs-mongo \
-       status shell-back shell-front seed prod-build prod-up prod-down clean reinstall
+.PHONY: build setup up down restart logs logs-back logs-db logs-front \
+        status shell-back shell-front seed prod-build prod-up prod-down clean reinstall \
+        dev db-up db-down test
 
 # --- Desenvolvimento ---
 
 build:
 	docker compose build
 
-setup:
-	@test -f .env || cp .env.example .env
+dev setup:
 	docker compose build
 	docker compose up -d
 	@echo ""
 	@echo "ContaQuiz rodando:"
-	@echo "  Frontend: http://localhost:3000"
-	@echo "  Backend:  http://localhost:5000"
-	@echo "  MongoDB:  localhost:27017"
+	@echo "  Frontend:   http://localhost:3000"
+	@echo "  Backend:    http://localhost:8080"
+	@echo "  PostgreSQL: localhost:5432"
 
-up:
+db-up up:
 	docker compose up -d
 
-down:
+db-down down:
 	docker compose down
 
 restart:
@@ -34,8 +34,8 @@ logs-back:
 logs-front:
 	docker compose logs -f frontend
 
-logs-mongo:
-	docker compose logs -f mongo
+logs-db:
+	docker compose logs -f postgres
 
 status:
 	docker compose ps
@@ -47,24 +47,26 @@ shell-front:
 	docker compose exec frontend sh
 
 seed:
-	docker compose exec backend npm run seed
+	@echo "Use 'docker compose exec backend curl -X POST http://localhost:8080/seed' ou o endpoint adequado"
+
+test:
+	docker run --rm -v "$(shell pwd)/backend/backend-quiz:/app" -w /app maven:3-eclipse-temurin-25 ./mvnw test
 
 # --- Producao ---
 
 prod-build:
-	docker compose -f docker-compose.prod.yml build
+	docker compose build
 
 prod-up:
-	docker compose -f docker-compose.prod.yml up -d
+	docker compose up -d
 
 prod-down:
-	docker compose -f docker-compose.prod.yml down
+	docker compose down
 
 # --- Utilitarios ---
 
 clean:
 	docker compose down -v --rmi local
-	docker compose -f docker-compose.prod.yml down -v --rmi local 2>/dev/null || true
 	@echo "Containers, volumes e imagens locais removidos."
 
 reinstall:
