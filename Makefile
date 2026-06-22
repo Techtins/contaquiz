@@ -1,13 +1,55 @@
-.PHONY: build setup up down restart logs logs-back logs-db logs-front \
-        status shell-back shell-front seed prod-build prod-up prod-down clean reinstall \
-        dev db-up db-down test
+MVN = ./mvnw
+DOCKER_IMAGE = techtins/contaquiz-backend:latest
 
-# --- Desenvolvimento ---
+.PHONY: help dev build test clean db-up db-down docker-build docker-run \
+        setup up down restart logs logs-back logs-db logs-front \
+        status shell-back shell-front seed prod-build prod-up prod-down reinstall
+
+help:
+	@echo "Comandos disponiveis:"
+	@echo "  make dev          - Executa o Quarkus em Live Reload (Dev Mode)"
+	@echo "  make build        - Compila a aplicacao gerando o jar executavel"
+	@echo "  make test         - Executa todos os testes de unidade e integracao"
+	@echo "  make clean        - Limpa a pasta target do Maven"
+	@echo "  make db-up        - Sobe o banco PostgreSQL local no Docker"
+	@echo "  make db-down      - Para o banco PostgreSQL local"
+	@echo "  make docker-build - Compila e constroi a imagem Docker (JVM Mode)"
+	@echo "  make docker-run   - Executa a imagem Docker gerada localmente"
+	@echo "  make setup        - Sobe o ambiente completo (full stack)"
+	@echo "  make logs-db      - Mostra logs do PostgreSQL"
+
+# Desenvolvimento e Build (Maven local)
+dev:
+	cd backend/backend-quiz && $(MVN) quarkus:dev
 
 build:
-	docker compose build
+	cd backend/backend-quiz && $(MVN) clean package -DskipTests
 
-dev setup:
+test:
+	cd backend/backend-quiz && $(MVN) test
+
+clean:
+	cd backend/backend-quiz && $(MVN) clean
+
+# Banco de Dados Local (Docker)
+db-up:
+	docker compose up -d postgres
+
+db-down:
+	docker compose down
+
+# Dockerizacao do Backend
+docker-build:
+	cd backend/backend-quiz && $(MVN) clean package -DskipTests
+	cd backend/backend-quiz && docker build -f src/main/docker/Dockerfile.jvm -t $(DOCKER_IMAGE) .
+
+docker-run:
+	docker run -i --rm -p 8080:8080 --network contaquiz-net $(DOCKER_IMAGE)
+
+# --- Full Stack (Docker Compose) ---
+
+setup:
+	@test -f .env || cp .env.example .env
 	docker compose build
 	docker compose up -d
 	@echo ""
@@ -16,10 +58,10 @@ dev setup:
 	@echo "  Backend:    http://localhost:8080"
 	@echo "  PostgreSQL: localhost:5432"
 
-db-up up:
+up:
 	docker compose up -d
 
-db-down down:
+down:
 	docker compose down
 
 restart:
@@ -49,11 +91,6 @@ shell-front:
 seed:
 	@echo "Use 'docker compose exec backend curl -X POST http://localhost:8080/seed' ou o endpoint adequado"
 
-test:
-	docker run --rm -v "$(shell pwd)/backend/backend-quiz:/app" -w /app maven:3-eclipse-temurin-25 ./mvnw test
-
-# --- Producao ---
-
 prod-build:
 	docker compose build
 
@@ -62,12 +99,6 @@ prod-up:
 
 prod-down:
 	docker compose down
-
-# --- Utilitarios ---
-
-clean:
-	docker compose down -v --rmi local
-	@echo "Containers, volumes e imagens locais removidos."
 
 reinstall:
 	docker compose down -v
