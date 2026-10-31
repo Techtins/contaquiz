@@ -1,10 +1,52 @@
-.PHONY: build setup up down restart logs logs-back logs-front logs-mongo \
-       status shell-back shell-front seed prod-build prod-up prod-down clean reinstall
+MVN = ./mvnw
+DOCKER_IMAGE = techtins/contaquiz-backend:latest
 
-# --- Desenvolvimento ---
+.PHONY: help dev build test clean db-up db-down docker-build docker-run \
+        setup up down restart logs logs-back logs-db logs-front \
+        status shell-back shell-front seed prod-build prod-up prod-down reinstall
+
+help:
+	@echo "Comandos disponiveis:"
+	@echo "  make dev          - Executa o Quarkus em Live Reload (Dev Mode)"
+	@echo "  make build        - Compila a aplicacao gerando o jar executavel"
+	@echo "  make test         - Executa todos os testes de unidade e integracao"
+	@echo "  make clean        - Limpa a pasta target do Maven"
+	@echo "  make db-up        - Sobe o banco PostgreSQL local no Docker"
+	@echo "  make db-down      - Para o banco PostgreSQL local"
+	@echo "  make docker-build - Compila e constroi a imagem Docker (JVM Mode)"
+	@echo "  make docker-run   - Executa a imagem Docker gerada localmente"
+	@echo "  make setup        - Sobe o ambiente completo (full stack)"
+	@echo "  make logs-db      - Mostra logs do PostgreSQL"
+
+# Desenvolvimento e Build (Maven local)
+dev:
+	cd backend/backend-quiz && $(MVN) quarkus:dev
 
 build:
-	docker compose build
+	cd backend/backend-quiz && $(MVN) clean package -DskipTests
+
+test:
+	cd backend/backend-quiz && $(MVN) test
+
+clean:
+	cd backend/backend-quiz && $(MVN) clean
+
+# Banco de Dados Local (Docker)
+db-up:
+	docker compose up -d postgres
+
+db-down:
+	docker compose down
+
+# Dockerizacao do Backend
+docker-build:
+	cd backend/backend-quiz && $(MVN) clean package -DskipTests
+	cd backend/backend-quiz && docker build -f src/main/docker/Dockerfile.jvm -t $(DOCKER_IMAGE) .
+
+docker-run:
+	docker run -i --rm -p 8080:8080 --network contaquiz-net $(DOCKER_IMAGE)
+
+# --- Full Stack (Docker Compose) ---
 
 setup:
 	@test -f .env || cp .env.example .env
@@ -12,9 +54,9 @@ setup:
 	docker compose up -d
 	@echo ""
 	@echo "ContaQuiz rodando:"
-	@echo "  Frontend: http://localhost:3000"
-	@echo "  Backend:  http://localhost:5000"
-	@echo "  MongoDB:  localhost:27017"
+	@echo "  Frontend:   http://localhost:3000"
+	@echo "  Backend:    http://localhost:8080"
+	@echo "  PostgreSQL: localhost:5432"
 
 up:
 	docker compose up -d
@@ -34,8 +76,8 @@ logs-back:
 logs-front:
 	docker compose logs -f frontend
 
-logs-mongo:
-	docker compose logs -f mongo
+logs-db:
+	docker compose logs -f postgres
 
 status:
 	docker compose ps
@@ -47,25 +89,16 @@ shell-front:
 	docker compose exec frontend sh
 
 seed:
-	docker compose exec backend npm run seed
-
-# --- Producao ---
+	@echo "Use 'docker compose exec backend curl -X POST http://localhost:8080/seed' ou o endpoint adequado"
 
 prod-build:
-	docker compose -f docker-compose.prod.yml build
+	docker compose build
 
 prod-up:
-	docker compose -f docker-compose.prod.yml up -d
+	docker compose up -d
 
 prod-down:
-	docker compose -f docker-compose.prod.yml down
-
-# --- Utilitarios ---
-
-clean:
-	docker compose down -v --rmi local
-	docker compose -f docker-compose.prod.yml down -v --rmi local 2>/dev/null || true
-	@echo "Containers, volumes e imagens locais removidos."
+	docker compose down
 
 reinstall:
 	docker compose down -v

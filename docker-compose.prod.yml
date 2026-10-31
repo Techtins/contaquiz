@@ -1,27 +1,39 @@
 services:
-  mongo:
-    image: mongo:7
-    container_name: contaquiz-mongo-prod
+  postgres:
+    image: postgres:16-alpine
+    container_name: contaquiz-postgres-prod
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-localpassword}
+      POSTGRES_DB: contaquiz_db
     volumes:
-      - mongo_data_prod:/data/db
+      - pgdata_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - contaquiz-net
     restart: always
 
   backend:
     build:
-      context: ./backend
-      target: prod
+      context: ./backend/backend-quiz
     container_name: contaquiz-backend-prod
     ports:
-      - "${PORT:-5000}:5000"
+      - "${PORT:-5000}:8080"
     environment:
-      - PORT=5000
-      - MONGO_URI=mongodb://mongo:27017/contaquiz
-      - JWT_SECRET=${JWT_SECRET:-contaquiz-dev-secret}
+      - PORT=8080
+      - DB_URL=jdbc:postgresql://postgres:5432/contaquiz_db
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-localpassword}
+      - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
     depends_on:
-      - mongo
+      postgres:
+        condition: service_healthy
     networks:
       - contaquiz-net
     restart: always
@@ -35,6 +47,9 @@ services:
     container_name: contaquiz-frontend-prod
     ports:
       - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:5000}
+      - NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN:-}
     depends_on:
       - backend
     networks:
@@ -42,7 +57,7 @@ services:
     restart: always
 
 volumes:
-  mongo_data_prod:
+  pgdata_prod:
 
 networks:
   contaquiz-net:

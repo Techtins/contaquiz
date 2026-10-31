@@ -1,0 +1,70 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: contaquiz-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - contaquiz-net
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      target: dev
+    container_name: contaquiz-backend
+    ports:
+      - "${PORT:-5000}:5000"
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://mongo:27017/contaquiz
+      - JWT_SECRET=${JWT_SECRET:-contaquiz-dev-secret}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - SENTRY_DSN=${SENTRY_DSN:-}
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/nodemon.json:/app/nodemon.json
+      - ./backend/tsconfig.json:/app/tsconfig.json
+      - backend_node_modules:/app/node_modules
+    depends_on:
+      - mongo
+    networks:
+      - contaquiz-net
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    container_name: contaquiz-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:5000}
+      - NEXT_PUBLIC_SENTRY_DSN=${NEXT_PUBLIC_SENTRY_DSN:-}
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/next.config.ts:/app/next.config.ts
+      - ./frontend/tsconfig.json:/app/tsconfig.json
+      - ./frontend/postcss.config.mjs:/app/postcss.config.mjs
+      - ./frontend/sentry.client.config.ts:/app/sentry.client.config.ts
+      - ./frontend/sentry.server.config.ts:/app/sentry.server.config.ts
+      - ./frontend/sentry.edge.config.ts:/app/sentry.edge.config.ts
+      - frontend_node_modules:/app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - contaquiz-net
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+  backend_node_modules:
+  frontend_node_modules:
+
+networks:
+  contaquiz-net:
+    driver: bridge
